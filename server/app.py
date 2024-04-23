@@ -14,6 +14,7 @@ class ClearSession(Resource):
 
         return {}, 204
 
+
 class Signup(Resource):
     def post(self):
         json = request.get_json()
