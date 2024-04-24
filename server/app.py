@@ -3,7 +3,7 @@
 from flask import request, session
 from flask_restful import Resource, Api
 
-from config import app, db
+from config import app, db, bcrypt
 from models import User
 
 class ClearSession(Resource):
@@ -21,13 +21,14 @@ class Signup(Resource):
         user = User(
             username=json['username']
         )
-        user.password_hash = User.generate_password_hash(json['password'])
+        user.password_hash = bcrypt.generate_password_hash(json['password']).decode('utf-8')
         db.session.add(user)
         db.session.commit()
 
         session['user_id'] = user.id
 
-        return user.to_dict(), 201
+        return {'id': user.id, 'username': user.username}, 201  # Return user object in JSON response
+
 
 
 class CheckSession(Resource):
@@ -39,7 +40,7 @@ class CheckSession(Resource):
             user = User.query.get(user_id)
             return user.to_dict()
 
-        return {}, 204
+        return None, 204
 
 class Login(Resource):
 
@@ -47,11 +48,13 @@ class Login(Resource):
         json = request.get_json()
         user = User.query.filter_by(username=json['username']).first()
 
-        if user and User.check_password_hash(user.password_hash, json['password']):
+        if user and bcrypt.check_password_hash(user.password_hash, json['password']):  # Change here
             session['user_id'] = user.id
-            return user.to_dict(), 200
+            return {'id': user.id, 'username': user.username}, 200  # Change here
 
         return {}, 401
+
+
 
 class Logout(Resource):
 
